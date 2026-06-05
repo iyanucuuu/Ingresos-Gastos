@@ -1,0 +1,46 @@
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <span class="material-icons">account_balance_wallet</span>
+    </div>
+    <div>
+      <div class="logo-text">FinanzasApp</div>
+      <div class="logo-sub">Panel de control</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ng-container *ngFor="let grupo of grupos">
+      <span class="nav-section-label">{{ grupo.section }}</span>
+      <a
+        *ngFor="let item of grupo.items"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        class="nav-item"
+      >
+        <span class="material-icons nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+    </ng-container>
+  </nav>
+
+  <div class="sidebar-footer">
+    <!-- Avatar con foto -->
+    <a routerLink="/perfil" class="user-chip">
+      <div class="user-avatar">
+        <img *ngIf="foto" [src]="foto" class="avatar-foto" alt="foto" />
+        <span *ngIf="!foto">{{ initials }}</span>
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ nombreCompleto }}</div>
+        <div class="user-plan">Ver perfil</div>
+      </div>
+    </a>
+
+    <!-- Cerrar sesión -->
+    <button class="logout-btn" (click)="cerrarSesion()" title="Cerrar sesión">
+      <span class="material-icons">logout</span>
+      <span>Cerrar sesión</span>
+    </button>
+  </div>
+</aside>

@@ -1,0 +1,121 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Categorías</div>
+      <div class="page-subtitle">Gestiona tus categorías de ingresos y gastos</div>
+    </div>
+    <button class="btn btn-primary" (click)="abrirModal()">
+      <span class="material-icons">add</span> Nueva categoría
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <ng-container *ngIf="!loading">
+    <div class="cats-grid">
+
+      <!-- Ingresos -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Ingresos</span>
+          <span class="badge badge-ing">{{ ingresos.length }}</span>
+        </div>
+        <div class="cat-list">
+          <div class="cat-item" *ngFor="let c of ingresos">
+            <div class="cat-chip" [style.background]="c.color" [style.color]="textColor(c.color)">
+              {{ c.nombre[0].toUpperCase() }}
+            </div>
+            <span class="cat-nombre">{{ c.nombre }}</span>
+            <div class="cat-color-dot" [style.background]="c.color" title="Color bloqueado">
+              <span class="material-icons lock-icon">lock</span>
+            </div>
+            <button class="btn-del" (click)="eliminar(c.id, c.nombre)" title="Eliminar">
+              <span class="material-icons">delete_outline</span>
+            </button>
+          </div>
+          <div class="empty-state" *ngIf="ingresos.length === 0">
+            <span class="material-icons">inbox</span>
+            <p>Sin categorías de ingreso</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gastos -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Gastos</span>
+          <span class="badge badge-gas">{{ gastos.length }}</span>
+        </div>
+        <div class="cat-list">
+          <div class="cat-item" *ngFor="let c of gastos">
+            <div class="cat-chip" [style.background]="c.color" [style.color]="textColor(c.color)">
+              {{ c.nombre[0].toUpperCase() }}
+            </div>
+            <span class="cat-nombre">{{ c.nombre }}</span>
+            <div class="cat-color-dot" [style.background]="c.color" title="Color bloqueado">
+              <span class="material-icons lock-icon">lock</span>
+            </div>
+            <button class="btn-del" (click)="eliminar(c.id, c.nombre)" title="Eliminar">
+              <span class="material-icons">delete_outline</span>
+            </button>
+          </div>
+          <div class="empty-state" *ngIf="gastos.length === 0">
+            <span class="material-icons">inbox</span>
+            <p>Sin categorías de gasto</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+</div>
+
+<!-- Modal nueva categoría -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="cerrar()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">Nueva categoría</span>
+      <button class="modal-close" (click)="cerrar()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="form-group">
+        <label class="form-label">Nombre *</label>
+        <input class="form-control" formControlName="nombre" placeholder="Ej: Nómina, Alquiler…" />
+        <span class="field-error" *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched">
+          El nombre es obligatorio
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo *</label>
+        <div class="tipo-toggle">
+          <button type="button" class="tipo-btn" [class.active-ing]="form.get('tipo')?.value === 'ingreso'"
+                  (click)="form.get('tipo')?.setValue('ingreso')">
+            <span class="material-icons">south</span> Ingreso
+          </button>
+          <button type="button" class="tipo-btn" [class.active-gas]="form.get('tipo')?.value === 'gasto'"
+                  (click)="form.get('tipo')?.setValue('gasto')">
+            <span class="material-icons">north</span> Gasto
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Color <span class="lock-note">(no se podrá cambiar después)</span></label>
+        <div class="color-row">
+          <input type="color" class="color-input" formControlName="color" />
+          <span class="color-hex">{{ form.get('color')?.value }}</span>
+          <div class="color-preview" [style.background]="form.get('color')?.value"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear categoría</button>
+      </div>
+    </form>
+  </div>
+</div>

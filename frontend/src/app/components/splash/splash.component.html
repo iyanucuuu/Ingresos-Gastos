@@ -1,0 +1,72 @@
+<div class="splash" [class.leaving]="leaving">
+
+  <!-- Orbs de fondo -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Partículas flotantes -->
+  <div
+    class="particle"
+    *ngFor="let p of particles"
+    [style.left.%]="p.x"
+    [style.top.%]="p.y"
+    [style.width.px]="p.size"
+    [style.height.px]="p.size"
+    [style.animation-delay.s]="p.delay"
+    [style.animation-duration.s]="p.duration"
+  ></div>
+
+  <!-- Tarjetas decorativas flotantes -->
+  <div class="float-card float-left">
+    <div class="float-icon" style="color:#97C459"><span class="material-icons">trending_up</span></div>
+    <div class="float-value" style="color:#97C459">+12.4%</div>
+    <div class="float-label">Ahorro anual</div>
+  </div>
+
+  <div class="float-card float-right">
+    <div class="float-icon" style="color:#378ADD"><span class="material-icons">account_balance</span></div>
+    <div class="float-value" style="color:#378ADD">360°</div>
+    <div class="float-label">Vista financiera</div>
+  </div>
+
+  <div class="float-card float-bottom-left">
+    <div class="float-icon" style="color:#f0a500"><span class="material-icons">calendar_month</span></div>
+    <div class="float-value" style="color:#f0a500">12 meses</div>
+    <div class="float-label">Historial completo</div>
+  </div>
+
+  <!-- Centro -->
+  <div class="splash-center">
+    <div class="logo-wrap">
+      <div class="logo-ring">
+        <div class="logo-icon-big">
+          <span class="material-icons">account_balance_wallet</span>
+        </div>
+      </div>
+      <div class="logo-name">FinanzasApp</div>
+      <div class="logo-tagline">Tu economía, bajo control</div>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div class="progress-wrap" *ngIf="!ready">
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="progress"></div>
+      </div>
+      <div class="progress-pct">{{ progress | number:'1.0-0' }}%</div>
+    </div>
+
+    <!-- Botón de acceso -->
+    <button class="enter-btn" *ngIf="ready" (click)="onEnter()">
+      <span class="btn-text">Acceder</span>
+      <span class="material-icons btn-arrow">arrow_forward</span>
+      <div class="btn-glow"></div>
+    </button>
+
+    <div class="hint" *ngIf="ready">Haz clic para entrar</div>
+  </div>
+
+  <!-- Grid de líneas de fondo -->
+  <div class="grid-bg"></div>
+
+</div>

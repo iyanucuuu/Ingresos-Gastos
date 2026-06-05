@@ -1,0 +1,148 @@
+.nav-mes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s;
+}
+.nav-btn:hover { background: var(--color-bg); }
+.nav-btn .material-icons { font-size: 20px; color: var(--color-text-muted); }
+
+.mes-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 160px;
+  text-align: center;
+}
+
+/* Leyenda */
+.legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+.legend-dot.verde  { background: #D4EDDA; }
+.legend-dot.rojo   { background: #F8D7DA; }
+.legend-dot.blanco { background: #fff; }
+.legend-sep { flex: 1; }
+.legend-stat { font-size: 13px; color: var(--color-text-muted); }
+.legend-stat.ing strong { color: var(--color-ingreso); }
+.legend-stat.gas strong { color: var(--color-gasto); }
+
+/* Calendario */
+.cal-card { padding: 16px; }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.header-row { margin-bottom: 4px; }
+
+.semana-row { margin-bottom: 4px; }
+
+.dia-header {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 6px 0;
+  text-transform: uppercase;
+}
+
+.dia-cell {
+  min-height: 80px;
+  border-radius: 8px;
+  padding: 8px 6px 6px;
+  background: #fafafa;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: transform 0.1s;
+}
+.dia-cell:hover:not(.vacia) { transform: scale(1.02); z-index: 1; }
+
+.dia-cell.vacia {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Colores del día */
+.dia-cell.dia-verde {
+  background: #D4EDDA;
+  border-color: #B8DACC;
+}
+.dia-cell.dia-rojo {
+  background: #F8D7DA;
+  border-color: #F1AEBA;
+}
+.dia-cell.dia-neutro {
+  background: #FFF9DB;
+  border-color: #FAE9A0;
+}
+
+/* Día de hoy */
+.dia-cell.hoy { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
+.dia-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dia-ing {
+  font-size: 10px;
+  font-weight: 600;
+  color: #3B6D11;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dia-gas {
+  font-size: 10px;
+  font-weight: 600;
+  color: #A32D2D;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dia-net {
+  font-size: 10px;
+  font-weight: 700;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  padding-top: 2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.net-pos  { color: #185FA5; }
+.net-neg  { color: #A32D2D; }
+.net-zero { color: var(--color-text-muted); }

@@ -1,0 +1,176 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Panel general</div>
+      <div class="page-subtitle">{{ getMesLabel() }}</div>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/ingresos" class="btn btn-primary">
+        <span class="material-icons">south</span> Añadir ingreso
+      </a>
+      <a routerLink="/gastos" class="btn btn-danger">
+        <span class="material-icons">north</span> Añadir gasto
+      </a>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Métricas clicables -->
+    <div class="metrics-grid">
+      <a routerLink="/ingresos" class="metric-card metric-link">
+        <div class="metric-label">💰 Ingresos del mes</div>
+        <div class="metric-value ingreso">{{ formatCurrency(totalIngresos) }}</div>
+        <div class="metric-cta">Ver ingresos →</div>
+      </a>
+      <a routerLink="/gastos" class="metric-card metric-link">
+        <div class="metric-label">💸 Gastos del mes</div>
+        <div class="metric-value gasto">{{ formatCurrency(totalGastos) }}</div>
+        <div class="metric-cta">Ver gastos →</div>
+      </a>
+      <a routerLink="/historico" class="metric-card metric-link total-card">
+        <div class="metric-label">📊 Total (lo que te queda)</div>
+        <div class="metric-value" [class.ingreso]="balanceNeto >= 0" [class.gasto]="balanceNeto < 0">
+          {{ formatCurrency(balanceNeto) }}
+        </div>
+        <div class="metric-sub" *ngIf="totalIngresos > 0">
+          {{ (balanceNeto / totalIngresos * 100 | number:'1.0-1') }}% del ingreso ahorrado
+        </div>
+        <div class="metric-cta">Ver histórico →</div>
+      </a>
+    </div>
+
+    <!-- Gráfico + Recientes -->
+    <div class="grid-2">
+      <!-- Gráfico de barras -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Ingresos vs Gastos</span>
+          <div class="chart-controls">
+            <span class="chart-legend">
+              <span class="legend-dot" style="background:#639922"></span> Ingresos
+              <span class="legend-dot" style="background:#E24B4A; margin-left:8px"></span> Gastos
+            </span>
+            <div class="year-nav">
+              <button class="year-btn" (click)="cambiarAnioChart(-1)">
+                <span class="material-icons">chevron_left</span>
+              </button>
+              <span class="year-label">{{ anioChart }}</span>
+              <button class="year-btn" (click)="cambiarAnioChart(1)">
+                <span class="material-icons">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="bar-chart-wrap">
+          <div class="bar-chart">
+            <div class="bar-group" *ngFor="let b of barrasChart">
+              <div class="bar-amounts" *ngIf="b.ingresos > 0 || b.gastos > 0">
+                <span class="bar-amount-ing" *ngIf="b.ingresos > 0">+{{ formatShort(b.ingresos) }}</span>
+                <span class="bar-amount-gas" *ngIf="b.gastos > 0">-{{ formatShort(b.gastos) }}</span>
+                <span class="bar-amount-net" [class.net-pos]="net(b) >= 0" [class.net-neg]="net(b) < 0">
+                  ={{ formatShort(net(b)) }}
+                </span>
+              </div>
+              <div class="bars">
+                <div class="bar ingreso" *ngIf="b.ingresos > 0" [style.height.px]="barHeight(b.ingresos, b.maxVal)"></div>
+                <div class="bar gasto"   *ngIf="b.gastos > 0"   [style.height.px]="barHeight(b.gastos,   b.maxVal)"></div>
+              </div>
+              <div class="bar-label">{{ b.mes }}<br><span class="bar-year">/{{ anioChart % 100 }}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimos movimientos -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Últimos movimientos</span>
+          <a routerLink="/historico" class="link-ver-todo">Ver todo</a>
+        </div>
+        <div class="mov-list">
+          <div class="mov-item" *ngFor="let mov of ultimosMovimientos">
+            <div class="row-icon" [class.ingreso]="mov['tipo']==='ingreso'" [class.gasto]="mov['tipo']==='gasto'">
+              <span class="material-icons">{{ mov['tipo'] === 'ingreso' ? 'south' : 'north' }}</span>
+            </div>
+            <div class="mov-info">
+              <span class="mov-concepto">{{ mov.concepto }}</span>
+              <span class="mov-fecha">{{ mov.fecha | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <span class="mov-importe" [class.amount-pos]="mov['tipo']==='ingreso'" [class.amount-neg]="mov['tipo']==='gasto'">
+              {{ mov['tipo'] === 'ingreso' ? '+' : '-' }}{{ formatCurrency(mov.importe) }}
+            </span>
+          </div>
+          <div class="empty-state" *ngIf="ultimosMovimientos.length === 0">
+            <span class="material-icons">inbox</span>
+            <p>Sin movimientos este mes</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Widget Inversiones -->
+    <a routerLink="/inversiones" class="card inv-widget" style="margin-top:16px;text-decoration:none;display:block;">
+      <div class="card-header">
+        <span class="card-title">📈 Mi cartera de inversiones</span>
+        <span class="link-ver-todo">Ver cartera →</span>
+      </div>
+
+      <!-- Sin inversiones -->
+      <div class="inv-empty" *ngIf="inversiones.length === 0">
+        <span class="material-icons">trending_up</span>
+        <p>Aún no tienes inversiones registradas</p>
+        <a routerLink="/inversiones" class="btn btn-primary" style="margin-top:12px;display:inline-flex">
+          <span class="material-icons">add</span> Añadir inversión
+        </a>
+      </div>
+
+      <!-- Con inversiones -->
+      <div class="inv-resumen" *ngIf="inversiones.length > 0">
+        <div class="inv-stat">
+          <div class="inv-stat-label">Capital invertido</div>
+          <div class="inv-stat-val">{{ formatCurrency(totalInvertido) }}</div>
+        </div>
+        <div class="inv-sep"></div>
+        <div class="inv-stat">
+          <div class="inv-stat-label">Valor actual</div>
+          <div class="inv-stat-val" [class.amount-pos]="totalActualInv >= totalInvertido" [class.amount-neg]="totalActualInv < totalInvertido">
+            {{ formatCurrency(totalActualInv) }}
+          </div>
+        </div>
+        <div class="inv-sep"></div>
+        <div class="inv-stat">
+          <div class="inv-stat-label">Ganancia / Pérdida</div>
+          <div class="inv-stat-val" [class.amount-pos]="gananciaTotal >= 0" [class.amount-neg]="gananciaTotal < 0">
+            {{ gananciaTotal >= 0 ? '+' : '' }}{{ formatCurrency(gananciaTotal) }}
+          </div>
+        </div>
+        <div class="inv-sep"></div>
+        <div class="inv-stat">
+          <div class="inv-stat-label">Rendimiento</div>
+          <div class="inv-stat-val" [class.amount-pos]="rendimientoPct >= 0" [class.amount-neg]="rendimientoPct < 0">
+            {{ rendimientoPct >= 0 ? '+' : '' }}{{ rendimientoPct | number:'1.2-2' }}%
+          </div>
+        </div>
+
+        <!-- Mini lista -->
+        <div class="inv-lista">
+          <div class="inv-row" *ngFor="let inv of inversiones.slice(0, 4)">
+            <div class="inv-nombre">
+              <strong>{{ inv.nombre }}</strong>
+              <span class="ticker-mini" *ngIf="inv.ticker">{{ inv.ticker }}</span>
+            </div>
+            <div class="inv-pnl" [class.amount-pos]="(inv.valorActual - inv.invertido) >= 0"
+                                  [class.amount-neg]="(inv.valorActual - inv.invertido) < 0">
+              {{ (inv.valorActual - inv.invertido) >= 0 ? '+' : '' }}{{ formatCurrency(inv.valorActual - inv.invertido) }}
+            </div>
+          </div>
+          <div class="inv-mas" *ngIf="inversiones.length > 4">
+            +{{ inversiones.length - 4 }} más · <a routerLink="/inversiones">ver todo</a>
+          </div>
+        </div>
+      </div>
+    </a>
+
+  </ng-container>
+</div>

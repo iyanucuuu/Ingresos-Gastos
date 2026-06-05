@@ -1,0 +1,99 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Histórico</div>
+      <div class="page-subtitle">Todos tus movimientos agrupados por mes</div>
+    </div>
+    <div class="anio-tabs">
+      <button
+        *ngFor="let a of anios"
+        class="anio-tab"
+        [class.active]="filtroAnio === a"
+        (click)="cambiarAnio(a)"
+      >{{ a }}</button>
+    </div>
+  </div>
+
+  <!-- Resumen año -->
+  <div class="metrics-grid" *ngIf="!loading">
+    <div class="metric-card">
+      <div class="metric-label">Total ingresos {{ filtroAnio }}</div>
+      <div class="metric-value ingreso">{{ formatCurrency(totalIngresos) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total gastos {{ filtroAnio }}</div>
+      <div class="metric-value gasto">{{ formatCurrency(totalGastos) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Balance anual</div>
+      <div class="metric-value" [class.ingreso]="totalIngresos - totalGastos >= 0" [class.gasto]="totalIngresos - totalGastos < 0">
+        {{ formatCurrency(totalIngresos - totalGastos) }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Movimientos</div>
+      <div class="metric-value neutral">{{ movimientos.length }}</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros-bar" *ngIf="!loading">
+    <div class="filter-tabs">
+      <button class="filter-tab" [class.active]="filtroTipo==='todos'" (click)="setTipo('todos')">Todos</button>
+      <button class="filter-tab" [class.active]="filtroTipo==='ingreso'" (click)="setTipo('ingreso')">Ingresos</button>
+      <button class="filter-tab gasto" [class.active]="filtroTipo==='gasto'" (click)="setTipo('gasto')">Gastos</button>
+    </div>
+    <div class="search-wrap">
+      <span class="material-icons search-icon">search</span>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Buscar movimiento..."
+        [(ngModel)]="filtroTexto"
+        (ngModelChange)="aplicarFiltros()"
+      />
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <!-- Timeline agrupada -->
+  <ng-container *ngIf="!loading">
+    <div class="timeline" *ngFor="let grupo of agrupadosPorMes()">
+      <div class="timeline-header">
+        <span class="timeline-mes">{{ grupo.mes }}</span>
+        <span class="timeline-balance" [class.pos]="getTotalGrupo(grupo.items) >= 0" [class.neg]="getTotalGrupo(grupo.items) < 0">
+          {{ getTotalGrupo(grupo.items) >= 0 ? '+' : '' }}{{ formatCurrency(getTotalGrupo(grupo.items)) }}
+        </span>
+      </div>
+      <div class="card timeline-card">
+        <table class="data-table">
+          <tbody>
+            <tr *ngFor="let mov of grupo.items">
+              <td style="width:36px">
+                <div class="row-icon" [class.ingreso]="mov.tipo==='ingreso'" [class.gasto]="mov.tipo==='gasto'">
+                  <span class="material-icons" style="font-size:14px">{{ mov.tipo === 'ingreso' ? 'south' : 'north' }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="concept-name">{{ mov.concepto }}</div>
+              </td>
+              <td><span class="tag" [class]="mov.tipo">{{ mov.tipo }}</span></td>
+              <td style="color:var(--color-text-muted);font-size:12px">{{ mov.fecha | date:'dd/MM' }}</td>
+              <td style="text-align:right">
+                <span [class.amount-pos]="mov.tipo==='ingreso'" [class.amount-neg]="mov.tipo==='gasto'">
+                  {{ mov.tipo === 'ingreso' ? '+' : '-' }}{{ formatCurrency(mov.importe) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="movimientosFiltrados.length === 0">
+      <span class="material-icons">history</span>
+      <p>No hay movimientos para los filtros seleccionados</p>
+    </div>
+  </ng-container>
+</div>

@@ -1,0 +1,104 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Resumen anual {{ anio }}</div>
+      <div class="page-subtitle">Ingresos y gastos comparados mes a mes</div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <ng-container *ngIf="!loading">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total ingresos</div>
+        <div class="metric-value ingreso">{{ formatCurrency(totalIngresos) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total gastos</div>
+        <div class="metric-value gasto">{{ formatCurrency(totalGastos) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Balance neto</div>
+        <div class="metric-value" [class.ingreso]="totalIngresos-totalGastos>=0" [class.gasto]="totalIngresos-totalGastos<0">
+          {{ formatCurrency(totalIngresos - totalGastos) }}
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Tasa de ahorro</div>
+        <div class="metric-value balance">{{ formatPct(tasaAhorro) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Mejor mes</div>
+        <div class="metric-value ingreso">{{ mejorMes }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Mes con más gasto</div>
+        <div class="metric-value gasto">{{ peorMes }}</div>
+      </div>
+    </div>
+
+    <!-- Gráfico de barras anual -->
+    <div class="card chart-card">
+      <div class="card-header">
+        <span class="card-title">Comparativa mensual</span>
+        <span class="chart-legend">
+          <span class="ldot" style="background:#639922"></span> Ingresos
+          <span class="ldot" style="background:#E24B4A;margin-left:10px"></span> Gastos
+        </span>
+      </div>
+      <div class="chart-wrap">
+        <div class="bar-chart-anual">
+          <div class="bar-col" *ngFor="let m of resumenMeses">
+            <div class="col-total" *ngIf="m.ingresos > 0 || m.gastos > 0">
+              <span [class.total-pos]="m.balance >= 0" [class.total-neg]="m.balance < 0">
+                ={{ formatShort(m.balance) }}
+              </span>
+            </div>
+            <div class="bars-group">
+              <div class="bar ing" [style.height.px]="barH(m.ingresos)" title="{{ formatCurrency(m.ingresos) }}"></div>
+              <div class="bar gas" [style.height.px]="barH(m.gastos)"   title="{{ formatCurrency(m.gastos) }}"></div>
+            </div>
+            <div class="bar-mes">{{ m.mes }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla resumen -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Detalle por mes</span></div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th style="text-align:right">Ingresos</th>
+            <th style="text-align:right">Gastos</th>
+            <th style="text-align:right">Balance</th>
+            <th>% Ahorro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of resumenMeses" [class.row-empty]="m.ingresos === 0 && m.gastos === 0">
+            <td><strong>{{ m.mes }}</strong></td>
+            <td class="amount-pos" style="text-align:right">{{ m.ingresos > 0 ? formatCurrency(m.ingresos) : '—' }}</td>
+            <td class="amount-neg" style="text-align:right">{{ m.gastos > 0 ? formatCurrency(m.gastos) : '—' }}</td>
+            <td style="text-align:right">
+              <span [class.amount-pos]="m.balance > 0" [class.amount-neg]="m.balance < 0">
+                {{ m.ingresos > 0 || m.gastos > 0 ? formatCurrency(m.balance) : '—' }}
+              </span>
+            </td>
+            <td>
+              <div class="ahorro-bar-wrap" *ngIf="m.ingresos > 0">
+                <div class="ahorro-bar" [style.width.%]="m.ingresos > 0 ? (m.balance / m.ingresos * 100) : 0"
+                  [class.neg]="m.balance < 0"></div>
+                <span class="ahorro-pct">{{ m.ingresos > 0 ? formatPct(m.balance / m.ingresos * 100) : '—' }}</span>
+              </div>
+              <span *ngIf="m.ingresos === 0" style="color:var(--color-text-muted)">—</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

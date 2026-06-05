@@ -1,0 +1,414 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Inversiones</div>
+      <div class="page-subtitle">Seguimiento de tu cartera</div>
+    </div>
+    <button class="btn btn-primary" (click)="abrirModal()">
+      <span class="material-icons">add</span> Añadir
+    </button>
+  </div>
+
+  <!-- KPIs globales -->
+  <div class="metrics-grid" *ngIf="inversiones.length > 0">
+    <div class="metric-card">
+      <div class="metric-label">Capital total</div>
+      <div class="metric-value neutral">{{ formatCurrency(totalInvertido) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Valor actual</div>
+      <div class="metric-value" [class.ingreso]="totalActual >= totalInvertido" [class.gasto]="totalActual < totalInvertido">
+        {{ formatCurrency(totalActual) }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Ganancia / Pérdida</div>
+      <div class="metric-value" [class.ingreso]="totalGanancia >= 0" [class.gasto]="totalGanancia < 0">
+        {{ totalGanancia >= 0 ? '+' : '' }}{{ formatCurrency(totalGanancia) }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Rendimiento total</div>
+      <div class="metric-value" [class.ingreso]="totalPct >= 0" [class.gasto]="totalPct < 0">
+        {{ formatPct(totalPct) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CUENTAS REMUNERADAS ──────────────────────────── -->
+  <ng-container *ngIf="ahorros.length > 0">
+    <div class="section-title">Cuentas remuneradas</div>
+
+    <div class="ahorro-tabs">
+      <button class="ahorro-tab" *ngFor="let a of ahorros"
+              [class.active]="cuentaSeleccionada?.id === a.id"
+              (click)="seleccionarCuenta(a)">
+        <span class="material-icons">savings</span>
+        {{ a.nombre }}
+        <span class="ahorro-tab-rate">{{ a.tasaAnual }}% / año</span>
+      </button>
+    </div>
+
+    <!-- Tarjeta con gráfico -->
+    <div class="card chart-card" *ngIf="cuentaSeleccionada">
+
+      <!-- Header -->
+      <div class="card-header">
+        <span class="card-title">Evolución · {{ cuentaSeleccionada.nombre }}</span>
+        <div class="chart-meta">
+          <span>Depositado: <strong>{{ formatCurrency(cuentaSeleccionada.invertido) }}</strong></span>
+          <span class="amount-pos">Hoy: <strong>{{ formatCurrency(cuentaSeleccionada.valorActual) }}</strong></span>
+          <span class="amount-pos"><strong>{{ formatPct(pct(cuentaSeleccionada)) }}</strong></span>
+          <div class="chart-legend-items">
+            <span class="leg-solid">— Real</span>
+            <span class="leg-dash">- - Proyección</span>
+            <span class="leg-dep">● Abono</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SVG chart -->
+      <div class="svg-wrap">
+        <svg [attr.viewBox]="'0 0 ' + CW + ' ' + CH" width="100%" [attr.height]="CH">
+
+          <!-- Gridlines -->
+          <line *ngFor="let t of yTicks"
+                [attr.x1]="PL" [attr.y1]="t.y" [attr.x2]="CW - PR" [attr.y2]="t.y"
+                stroke="var(--color-border)" stroke-width="1" stroke-dasharray="4 4" />
+
+          <!-- Y labels -->
+          <text *ngFor="let t of yTicks" [attr.x]="PL - 6" [attr.y]="t.y + 4"
+                text-anchor="end" font-size="10" fill="var(--color-text-muted)">{{ t.label }}</text>
+
+          <!-- X labels -->
+          <text *ngFor="let t of xTicks" [attr.x]="t.x" [attr.y]="CH - 6"
+                text-anchor="middle" font-size="10" fill="var(--color-text-muted)">{{ t.label }}</text>
+
+          <!-- Área rellena -->
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stop-color="#378ADD" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#378ADD" stop-opacity="0.01"/>
+            </linearGradient>
+          </defs>
+          <path *ngIf="pathArea" [attr.d]="pathArea" fill="url(#areaGrad)" />
+
+          <!-- Línea sólida (pasado) -->
+          <path *ngIf="pathPasado" [attr.d]="pathPasado"
+                fill="none" stroke="#378ADD" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Línea discontinua (futuro) -->
+          <path *ngIf="pathFuturo" [attr.d]="pathFuturo"
+                fill="none" stroke="#378ADD" stroke-width="2"
+                stroke-dasharray="6 4" stroke-linecap="round" opacity="0.4" />
+
+          <!-- Línea vertical HOY -->
+          <ng-container *ngFor="let p of puntos">
+            <line *ngIf="p.esHoy"
+                  [attr.x1]="p.x" [attr.y1]="PT" [attr.x2]="p.x" [attr.y2]="CH - PB"
+                  stroke="#378ADD" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.35" />
+            <text *ngIf="p.esHoy" [attr.x]="p.x" [attr.y]="PT - 7"
+                  text-anchor="middle" font-size="9" fill="#378ADD" font-weight="700">HOY</text>
+          </ng-container>
+
+          <!-- Puntos normales -->
+          <circle *ngFor="let p of puntos"
+                  [attr.cx]="p.x" [attr.cy]="p.y"
+                  [attr.r]="p.esHoy ? 5 : (p.esPasado ? 3.5 : 2.5)"
+                  [attr.fill]="p.depTotal > 0 ? '#F59E0B' : (p.depTotal < 0 ? '#E24B4A' : (p.esHoy ? '#378ADD' : (p.esPasado ? '#378ADD' : '#fff')))"
+                  [attr.stroke]="p.depTotal > 0 ? '#D97706' : (p.depTotal < 0 ? '#B91C1C' : '#378ADD')"
+                  [attr.stroke-width]="p.esPasado ? 0 : 2"
+                  [attr.opacity]="p.esPasado ? 1 : 0.5"
+                  style="cursor:pointer"
+                  (mouseenter)="showTip(p)" (mouseleave)="hideTip()" />
+
+          <!-- Etiquetas de abono / retirada sobre los puntos -->
+          <ng-container *ngFor="let p of puntos">
+            <text *ngIf="p.depTotal !== 0 && p.esPasado"
+                  [attr.x]="p.x" [attr.y]="p.y - 10"
+                  text-anchor="middle" font-size="9" font-weight="700"
+                  [attr.fill]="p.depTotal > 0 ? '#B45309' : '#A32D2D'">
+              {{ formatShort(p.depTotal) }}
+            </text>
+          </ng-container>
+
+        </svg>
+
+        <!-- Tooltip -->
+        <div class="chart-tip" *ngIf="tooltip.visible"
+             [style.left.%]="tooltip.x / CW * 100"
+             [style.top.%]="tooltip.y / CH * 100">
+          <div class="tip-label">{{ tooltip.label }}</div>
+          <div class="tip-valor">{{ formatCurrency(tooltip.valor) }}</div>
+          <div class="tip-dep" *ngIf="tooltip.depTotal > 0">
+            <span class="material-icons" style="font-size:11px;vertical-align:middle">add_circle</span>
+            +{{ formatCurrency(tooltip.depTotal) }} añadido
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de abonos (si hay más de 1 depósito) -->
+      <div class="dep-historia" *ngIf="historicoDepositos.length > 0">
+        <div class="dep-historia-title">Abonos realizados</div>
+        <div class="dep-row" *ngFor="let d of historicoDepositos">
+          <span class="material-icons dep-icon" [style.color]="d.importe >= 0 ? '#F59E0B' : '#E24B4A'">
+            {{ d.importe >= 0 ? 'add_circle' : 'remove_circle' }}
+          </span>
+          <span class="dep-fecha">{{ d.fecha | date:'dd/MM/yyyy' }}</span>
+          <span class="dep-importe" [class.amount-neg]="d.importe < 0">
+            {{ d.importe >= 0 ? '+' : '' }}{{ formatCurrency(d.importe) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="ahorro-actions">
+        <button class="btn btn-primary btn-sm" (click)="abrirDepositoModal()">
+          <span class="material-icons">add_circle_outline</span> Añadir capital
+        </button>
+        <button class="btn btn-retirar btn-sm" (click)="abrirRetiroModal()">
+          <span class="material-icons">remove_circle_outline</span> Retirar capital
+        </button>
+        <button class="btn btn-outline btn-sm" (click)="abrirModal(cuentaSeleccionada)">
+          <span class="material-icons">edit</span> Editar
+        </button>
+        <button class="btn btn-danger btn-sm" (click)="eliminar(cuentaSeleccionada.id, cuentaSeleccionada.nombre)">
+          <span class="material-icons">delete_outline</span> Eliminar
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── INVERSIONES REGULARES ─────────────────────────── -->
+  <ng-container *ngIf="inversReg.length > 0">
+    <div class="section-title" *ngIf="ahorros.length > 0">Cartera de inversiones</div>
+    <div class="card" style="margin-top:4px">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Activo</th><th>Ticker</th><th>Fecha</th>
+            <th>Invertido</th><th>Valor actual</th><th>Ganancia</th><th>%</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inv of inversReg" [class.row-pos]="ganancia(inv) >= 0" [class.row-neg]="ganancia(inv) < 0">
+            <td><strong>{{ inv.nombre }}</strong></td>
+            <td><span class="ticker-tag" *ngIf="inv.ticker">{{ inv.ticker }}</span></td>
+            <td>{{ inv.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ formatCurrency(inv.invertido) }}</td>
+            <td>{{ formatCurrency(inv.valorActual) }}</td>
+            <td [class.amount-pos]="ganancia(inv) >= 0" [class.amount-neg]="ganancia(inv) < 0">
+              {{ formatCurrency(ganancia(inv)) }}
+            </td>
+            <td [class.amount-pos]="pct(inv) >= 0" [class.amount-neg]="pct(inv) < 0">
+              {{ formatPct(pct(inv)) }}
+            </td>
+            <td class="acciones">
+              <button class="btn-icon" (click)="abrirModal(inv)" title="Editar">
+                <span class="material-icons">edit</span>
+              </button>
+              <button class="btn-icon danger" (click)="eliminar(inv.id, inv.nombre)" title="Eliminar">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- Empty state -->
+  <div class="card" style="margin-top:4px" *ngIf="inversiones.length === 0">
+    <div class="empty-state">
+      <span class="material-icons">trending_up</span>
+      <p>No hay inversiones registradas</p>
+      <button class="btn btn-primary" style="margin-top:12px" (click)="abrirModal()">Añadir primera inversión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL RETIRAR CAPITAL ───────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showRetiroModal" (click)="cerrarRetiro()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">
+        <span class="material-icons" style="color:#E24B4A;vertical-align:middle;margin-right:6px">remove_circle</span>
+        Retirar capital · {{ cuentaSeleccionada?.nombre }}
+      </span>
+      <button class="modal-close" (click)="cerrarRetiro()"><span class="material-icons">close</span></button>
+    </div>
+
+    <form [formGroup]="retiroForm" (ngSubmit)="guardarRetiro()">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Importe a retirar (€) *</label>
+          <input class="form-control" type="number" step="0.01" formControlName="importe"
+                 [attr.max]="maxRetiro" placeholder="0.00" autofocus />
+          <span class="field-error" *ngIf="retiroForm.get('importe')?.errors?.['required'] && retiroForm.get('importe')?.touched">
+            Importe obligatorio
+          </span>
+          <span class="field-error" *ngIf="retiroForm.get('importe')?.errors?.['excede']">
+            No puedes retirar más de {{ formatCurrency(maxRetiro) }}
+          </span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha del retiro *</label>
+          <input class="form-control" type="date" formControlName="fecha" />
+        </div>
+      </div>
+
+      <div class="deposit-preview" *ngIf="cuentaSeleccionada">
+        <div class="dep-prev-row">
+          <span>Valor actual</span>
+          <strong>{{ formatCurrency(cuentaSeleccionada.valorActual) }}</strong>
+        </div>
+        <div class="dep-prev-row dep-prev-retiro" *ngIf="retiroForm.get('importe')?.value > 0">
+          <span>− Retirar</span>
+          <strong class="amount-neg">{{ formatCurrency(retiroForm.get('importe')?.value) }}</strong>
+        </div>
+        <div class="dep-prev-row dep-prev-total" *ngIf="retiroForm.get('importe')?.value > 0">
+          <span>Quedará aprox.</span>
+          <strong [class.amount-neg]="cuentaSeleccionada.valorActual - +retiroForm.get('importe')!.value < 0">
+            {{ formatCurrency(cuentaSeleccionada.valorActual - +retiroForm.get('importe')!.value) }}
+          </strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cerrarRetiro()">Cancelar</button>
+        <button type="submit" class="btn btn-danger">
+          <span class="material-icons">remove_circle_outline</span> Retirar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MODAL PRINCIPAL ──────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="cerrar()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">{{ editandoId ? 'Editar' : 'Nueva' }} {{ tipoForm === 'ahorro' ? 'cuenta remunerada' : 'inversión' }}</span>
+      <button class="modal-close" (click)="cerrar()"><span class="material-icons">close</span></button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <!-- Tipo -->
+      <div class="tipo-selector">
+        <button type="button" class="tipo-btn" [class.active]="tipoForm === 'inversion'"
+                (click)="form.get('tipo')?.setValue('inversion')">
+          <span class="material-icons">trending_up</span> Inversión
+        </button>
+        <button type="button" class="tipo-btn" [class.active]="tipoForm === 'ahorro'"
+                (click)="form.get('tipo')?.setValue('ahorro')">
+          <span class="material-icons">savings</span> Cuenta remunerada
+        </button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre *</label>
+          <input class="form-control" formControlName="nombre"
+                 [placeholder]="tipoForm === 'ahorro' ? 'Ej: MyInvestor, Revolut…' : 'Ej: Apple, S&P 500…'" />
+          <span class="field-error" *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched">Obligatorio</span>
+        </div>
+        <div class="form-group" *ngIf="tipoForm === 'inversion'">
+          <label class="form-label">Ticker</label>
+          <input class="form-control" formControlName="ticker" placeholder="AAPL" style="text-transform:uppercase" />
+        </div>
+        <div class="form-group" *ngIf="tipoForm === 'ahorro'">
+          <label class="form-label">Tasa anual (%)</label>
+          <input class="form-control" type="number" step="0.01" formControlName="tasaAnual" placeholder="2.00" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ tipoForm === 'ahorro' ? 'Capital inicial (€)' : 'Capital invertido (€)' }} *</label>
+          <input class="form-control" type="number" step="0.01" formControlName="invertido" placeholder="0.00" />
+          <span class="field-error" *ngIf="form.get('invertido')?.invalid && form.get('invertido')?.touched">Obligatorio</span>
+          <span class="field-hint" *ngIf="tipoForm === 'ahorro' && editandoId">
+            Solo modifica el abono inicial. Los abonos adicionales se gestionan con "Añadir capital".
+          </span>
+        </div>
+        <div class="form-group" *ngIf="tipoForm === 'inversion'">
+          <label class="form-label">Valor actual (€) *</label>
+          <input class="form-control" type="number" step="0.01" formControlName="valorActual" placeholder="0.00" />
+          <span class="field-error" *ngIf="form.get('valorActual')?.touched && !form.get('valorActual')?.value">Obligatorio</span>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="tipoForm === 'ahorro'">
+        <div class="ahorro-info-box">
+          <span class="material-icons">info</span>
+          El valor actual se calcula solo:
+          <strong>{{ form.get('tasaAnual')?.value ?? 2 }}% anual</strong>
+          → <strong>{{ ((form.get('tasaAnual')?.value ?? 2) / 12) | number:'1.3-3' }}% mensual</strong>, compuesto mes a mes.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ tipoForm === 'ahorro' ? 'Fecha de apertura' : 'Fecha de compra' }} *</label>
+        <input class="form-control" type="date" formControlName="fecha" />
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">{{ editandoId ? 'Guardar' : 'Añadir' }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MODAL AÑADIR CAPITAL ─────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showDepositModal" (click)="cerrarDeposito()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">
+        <span class="material-icons" style="color:#F59E0B;vertical-align:middle;margin-right:6px">add_circle</span>
+        Añadir capital · {{ cuentaSeleccionada?.nombre }}
+      </span>
+      <button class="modal-close" (click)="cerrarDeposito()"><span class="material-icons">close</span></button>
+    </div>
+
+    <form [formGroup]="depositForm" (ngSubmit)="guardarDeposito()">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Importe a añadir (€) *</label>
+          <input class="form-control" type="number" step="0.01" formControlName="importe"
+                 placeholder="0.00" autofocus />
+          <span class="field-error" *ngIf="depositForm.get('importe')?.invalid && depositForm.get('importe')?.touched">
+            Importe obligatorio y mayor que 0
+          </span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha del abono *</label>
+          <input class="form-control" type="date" formControlName="fecha" />
+        </div>
+      </div>
+
+      <div class="deposit-preview" *ngIf="cuentaSeleccionada">
+        <div class="dep-prev-row">
+          <span>Capital actual</span>
+          <strong>{{ formatCurrency(cuentaSeleccionada.invertido) }}</strong>
+        </div>
+        <div class="dep-prev-row dep-prev-add" *ngIf="depositForm.get('importe')?.value > 0">
+          <span>+ Nuevo abono</span>
+          <strong class="amount-pos">{{ formatCurrency(depositForm.get('importe')?.value) }}</strong>
+        </div>
+        <div class="dep-prev-row dep-prev-total" *ngIf="depositForm.get('importe')?.value > 0">
+          <span>Total depositado</span>
+          <strong>{{ formatCurrency(cuentaSeleccionada.invertido + +depositForm.get('importe')!.value) }}</strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cerrarDeposito()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+          <span class="material-icons">add_circle_outline</span> Añadir
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

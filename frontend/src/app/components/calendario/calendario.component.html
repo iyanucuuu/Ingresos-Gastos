@@ -1,0 +1,56 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Calendario</div>
+      <div class="page-subtitle">Actividad financiera por día</div>
+    </div>
+    <div class="nav-mes">
+      <button class="nav-btn" (click)="cambiarMes(-1)">
+        <span class="material-icons">chevron_left</span>
+      </button>
+      <span class="mes-label">{{ mesesLabels[mes - 1] }} {{ anio }}</span>
+      <button class="nav-btn" (click)="cambiarMes(1)">
+        <span class="material-icons">chevron_right</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Leyenda + resumen -->
+  <div class="legend-bar">
+    <div class="legend-item"><span class="legend-dot verde"></span> Ganancias</div>
+    <div class="legend-item"><span class="legend-dot rojo"></span> Pérdidas</div>
+    <div class="legend-item"><span class="legend-dot blanco"></span> Sin actividad</div>
+    <div class="legend-sep"></div>
+    <div class="legend-stat ing">Ingresos: <strong>{{ formatCurrency(totalIngresos) }}</strong></div>
+    <div class="legend-stat gas">Gastos: <strong>{{ formatCurrency(totalGastos) }}</strong></div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <div class="card cal-card" *ngIf="!loading">
+    <!-- Cabecera días -->
+    <div class="cal-grid header-row">
+      <div class="dia-header" *ngFor="let d of diasSemana">{{ d }}</div>
+    </div>
+
+    <!-- Semanas -->
+    <div class="cal-grid semana-row" *ngFor="let semana of semanas">
+      <ng-container *ngFor="let dia of semana">
+        <!-- Celda vacía -->
+        <div class="dia-cell vacia" *ngIf="!dia"></div>
+
+        <!-- Celda con día -->
+        <div class="dia-cell" *ngIf="dia" [ngClass]="colorClass(dia)" [class.hoy]="dia.hoy">
+          <div class="dia-num">{{ dia.dia }}</div>
+          <ng-container *ngIf="dia.ingreso > 0 || dia.gasto > 0">
+            <div class="dia-ing" *ngIf="dia.ingreso > 0">+{{ formatCurrency(dia.ingreso) }}</div>
+            <div class="dia-gas" *ngIf="dia.gasto > 0">-{{ formatCurrency(dia.gasto) }}</div>
+            <div class="dia-net" [class.net-pos]="dia.net > 0" [class.net-neg]="dia.net < 0" [class.net-zero]="dia.net === 0">
+              ={{ formatCurrency(dia.net) }}
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

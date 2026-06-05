@@ -1,0 +1,56 @@
+body{
+background-color: black;
+}
+
+header {
+    background-color: rgb(185, 185, 185);
+    text-align: center;
+    padding: 30px;
+    font-size: 32px;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #747474, #969696, #c7c7c7);
+    }
+
+header h1 {
+    font-family: "Poppins", sans-serif;
+    font-size: 50px;
+    font-weight: 700;
+    color: black;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+
+.gastos{
+    width: 50%;
+    background-color: aqua;
+    
+}
+
+/* Contenedor principal debajo del encabezado */
+.contenedor {
+    display: flex;           /* Pone los hijos en fila */
+    height: calc(100vh - 80px); /* Ocupa toda la pantalla menos el header */
+}
+
+/* Zonas izquierda y derecha */
+.zona {    
+    flex: 1;                 /* Cada una ocupa la mitad */
+    font-weight: bold;
+    color: white;
+    background-color: black;
+    }
+
+.izquierda {
+    border-right: 4px solid white;
+    }
+
+.derecha {
+    border-left: 4px solid white;
+}
+
+.zona:hover {
+    transform: scale(1.05);
+}
+

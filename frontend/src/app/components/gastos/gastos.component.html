@@ -1,0 +1,167 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Gastos</div>
+      <div class="page-subtitle">Controla tus gastos mensuales</div>
+    </div>
+    <div class="header-actions">
+      <div class="month-nav">
+        <button class="month-btn" (click)="cambiarMes(-1)"><span class="material-icons">chevron_left</span></button>
+        <span class="month-label">{{ getMesLabel() }}</span>
+        <button class="month-btn" (click)="cambiarMes(1)"><span class="material-icons">chevron_right</span></button>
+      </div>
+      <button class="btn btn-danger" (click)="abrirModal()">
+        <span class="material-icons">add</span> Nuevo gasto
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <ng-container *ngIf="!loading">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total este mes</div>
+        <div class="metric-value gasto">{{ formatCurrency(totalMes) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Media mensual</div>
+        <div class="metric-value gasto">{{ formatCurrency(mediaMensual) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Mayor gasto</div>
+        <div class="metric-value gasto">{{ formatCurrency(maxGasto) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Nº de gastos</div>
+        <div class="metric-value neutral">{{ gastos.length }}</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card table-card">
+        <div class="card-header">
+          <span class="card-title">Detalle de gastos</span>
+          <div class="filter-tabs">
+            <button class="filter-tab active-gasto" [class.active]="!filtroCategoriaId" (click)="filtrarCategoria()">Todos</button>
+            <button class="filter-tab active-gasto" *ngFor="let cat of categorias"
+              [class.active]="filtroCategoriaId === cat.id" (click)="filtrarCategoria(cat.id)">{{ cat.nombre }}</button>
+          </div>
+        </div>
+        <table class="data-table" *ngIf="gastos.length > 0; else emptyGastos">
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              <th>Categoría</th>
+              <th>Periodicidad</th>
+              <th>Fecha</th>
+              <th style="text-align:right">Importe</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let g of gastos">
+              <td>
+                <div class="row-concept">
+                  <div class="row-icon gasto"><span class="material-icons" style="font-size:14px">north</span></div>
+                  <div>
+                    <div class="concept-name">{{ g.concepto }}</div>
+                    <div class="concept-sub" *ngIf="g.notas">{{ g.notas }}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="tag gasto" [style.background]="g.categoria?.color + '33'" [style.color]="g.categoria?.color">{{ g.categoria?.nombre ?? '—' }}</span></td>
+              <td><span class="tag" [class]="g.periodicidad">{{ g.periodicidad }}</span></td>
+              <td style="color:var(--color-text-muted);font-size:12px">{{ g.fecha | date:'dd/MM/yyyy' }}</td>
+              <td class="amount-neg" style="text-align:right">-{{ formatCurrency(g.importe) }}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" (click)="abrirModal(g)"><span class="material-icons">edit</span></button>
+                  <button class="icon-btn danger" (click)="eliminar(g.id)"><span class="material-icons">delete</span></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #emptyGastos>
+          <div class="empty-state">
+            <span class="material-icons">north</span>
+            <p>No hay gastos en {{ getMesLabel() }}</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Por categoría</span></div>
+        <div class="cat-breakdown">
+          <ng-container *ngFor="let cat of categorias">
+            <ng-container *ngIf="getCatTotal(cat.id) > 0">
+              <div class="cat-row">
+                <div class="cat-info">
+                  <span class="cat-name">{{ cat.nombre }}</span>
+                  <span class="cat-amount amount-neg">{{ formatCurrency(getCatTotal(cat.id)) }}</span>
+                </div>
+                <div class="cat-bar-bg">
+                  <div class="cat-bar-fill" [style.width.%]="barWidth(getCatTotal(cat.id))" style="background:#E24B4A"></div>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<div class="modal-backdrop" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">{{ editando ? 'Editar gasto' : 'Nuevo gasto' }}</span>
+      <button class="modal-close" (click)="cerrarModal()"><span class="material-icons">close</span></button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="form-group">
+        <label class="form-label">Concepto *</label>
+        <input class="form-control" formControlName="concepto" placeholder="Ej: Alquiler mayo" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Importe (€) *</label>
+          <input class="form-control" type="number" step="0.01" formControlName="importe" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha *</label>
+          <input class="form-control" type="date" formControlName="fecha" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select class="form-control" formControlName="categoriaId">
+            <option value="" disabled>Selecciona</option>
+            <option *ngFor="let cat of categorias" [value]="cat.id">{{ cat.nombre }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Periodicidad</label>
+          <select class="form-control" formControlName="periodicidad">
+            <option value="puntual">Puntual</option>
+            <option value="mensual">Mensual</option>
+            <option value="trimestral">Trimestral</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-control" formControlName="notas" rows="2" placeholder="Opcional..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-danger" [disabled]="form.invalid">
+          {{ editando ? 'Guardar cambios' : 'Añadir gasto' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

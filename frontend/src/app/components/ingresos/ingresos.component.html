@@ -1,0 +1,193 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Ingresos</div>
+      <div class="page-subtitle">Gestiona tus fuentes de ingresos</div>
+    </div>
+    <div class="header-actions">
+      <div class="month-nav">
+        <button class="month-btn" (click)="cambiarMes(-1)">
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <span class="month-label">{{ getMesLabel() }}</span>
+        <button class="month-btn" (click)="cambiarMes(1)">
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+      <button class="btn btn-primary" (click)="abrirModal()">
+        <span class="material-icons">add</span> Nuevo ingreso
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Métricas -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total este mes</div>
+        <div class="metric-value ingreso">{{ formatCurrency(totalMes) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Media mensual</div>
+        <div class="metric-value ingreso">{{ formatCurrency(mediaMensual) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Mayor ingreso</div>
+        <div class="metric-value ingreso">{{ formatCurrency(maxIngreso) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Nº de ingresos</div>
+        <div class="metric-value neutral">{{ ingresos.length }}</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Tabla -->
+      <div class="card table-card">
+        <div class="card-header">
+          <span class="card-title">Detalle de ingresos</span>
+          <div class="filter-tabs">
+            <button class="filter-tab" [class.active]="!filtroCategoriaId" (click)="filtrarCategoria()">Todos</button>
+            <button
+              class="filter-tab"
+              *ngFor="let cat of categorias"
+              [class.active]="filtroCategoriaId === cat.id"
+              (click)="filtrarCategoria(cat.id)"
+            >{{ cat.nombre }}</button>
+          </div>
+        </div>
+        <table class="data-table" *ngIf="ingresos.length > 0; else emptyIngresos">
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              <th>Categoría</th>
+              <th>Periodicidad</th>
+              <th>Fecha</th>
+              <th style="text-align:right">Importe</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ing of ingresos">
+              <td>
+                <div class="row-concept">
+                  <div class="row-icon ingreso">
+                    <span class="material-icons" style="font-size:14px">south</span>
+                  </div>
+                  <div>
+                    <div class="concept-name">{{ ing.concepto }}</div>
+                    <div class="concept-sub" *ngIf="ing.notas">{{ ing.notas }}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="tag ingreso" [style.background]="ing.categoria?.color + '33'" [style.color]="ing.categoria?.color">{{ ing.categoria?.nombre ?? '—' }}</span></td>
+              <td><span class="tag" [class]="ing.periodicidad">{{ ing.periodicidad }}</span></td>
+              <td style="color:var(--color-text-muted);font-size:12px">{{ ing.fecha | date:'dd/MM/yyyy' }}</td>
+              <td class="amount-pos" style="text-align:right">+{{ formatCurrency(ing.importe) }}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="icon-btn" (click)="abrirModal(ing)" title="Editar">
+                    <span class="material-icons">edit</span>
+                  </button>
+                  <button class="icon-btn danger" (click)="eliminar(ing.id)" title="Eliminar">
+                    <span class="material-icons">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #emptyIngresos>
+          <div class="empty-state">
+            <span class="material-icons">south</span>
+            <p>No hay ingresos en {{ getMesLabel() }}</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Desglose por categoría -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Por categoría</span>
+        </div>
+        <div class="cat-breakdown">
+          <ng-container *ngFor="let cat of categorias">
+            <ng-container *ngIf="getCatTotal(cat.id) > 0">
+              <div class="cat-row">
+                <div class="cat-info">
+                  <span class="cat-name">{{ cat.nombre }}</span>
+                  <span class="cat-amount amount-pos">{{ formatCurrency(getCatTotal(cat.id)) }}</span>
+                </div>
+                <div class="cat-bar-bg">
+                  <div class="cat-bar-fill" [style.width.%]="barWidth(getCatTotal(cat.id))" style="background:#639922"></div>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+          <div class="empty-state" *ngIf="totalMes === 0">
+            <span class="material-icons">bar_chart</span>
+            <p>Sin datos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">{{ editando ? 'Editar ingreso' : 'Nuevo ingreso' }}</span>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="form-group">
+        <label class="form-label">Concepto *</label>
+        <input class="form-control" formControlName="concepto" placeholder="Ej: Nómina mayo" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Importe (€) *</label>
+          <input class="form-control" type="number" step="0.01" formControlName="importe" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha *</label>
+          <input class="form-control" type="date" formControlName="fecha" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select class="form-control" formControlName="categoriaId">
+            <option value="" disabled>Selecciona</option>
+            <option *ngFor="let cat of categorias" [value]="cat.id">{{ cat.nombre }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Periodicidad</label>
+          <select class="form-control" formControlName="periodicidad">
+            <option value="puntual">Puntual</option>
+            <option value="mensual">Mensual</option>
+            <option value="trimestral">Trimestral</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-control" formControlName="notas" rows="2" placeholder="Opcional..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="form.invalid">
+          {{ editando ? 'Guardar cambios' : 'Añadir ingreso' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

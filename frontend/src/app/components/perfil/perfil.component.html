@@ -1,0 +1,84 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Mi perfil</div>
+      <div class="page-subtitle">Datos personales</div>
+    </div>
+  </div>
+
+  <div class="perfil-layout">
+
+    <!-- Avatar card -->
+    <div class="card avatar-card">
+      <!-- Foto o iniciales -->
+      <div class="avatar-wrap">
+        <img *ngIf="fotoPreview" [src]="fotoPreview" class="avatar-img" alt="Foto de perfil" />
+        <div *ngIf="!fotoPreview" class="avatar-big">{{ initials }}</div>
+
+        <!-- Botón cámara encima -->
+        <label class="avatar-cam-btn" title="Cambiar foto">
+          <span class="material-icons">photo_camera</span>
+          <input type="file" accept="image/*" (change)="onFotoChange($event)" hidden />
+        </label>
+      </div>
+
+      <div class="avatar-name">{{ form.get('nombre')?.value || 'Sin nombre' }} {{ form.get('apellidos')?.value }}</div>
+      <div class="avatar-email">{{ form.get('email')?.value || 'Sin email' }}</div>
+
+      <button *ngIf="fotoPreview" class="btn-quitar-foto" (click)="quitarFoto()">
+        <span class="material-icons">delete</span> Quitar foto
+      </button>
+
+      <button class="btn-logout" (click)="cerrarSesion()">
+        <span class="material-icons">logout</span> Cerrar sesión
+      </button>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card form-card">
+      <div class="card-header">
+        <span class="card-title">Información personal</span>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre *</label>
+            <input class="form-control" formControlName="nombre" placeholder="Tu nombre" />
+            <span class="field-error" *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched">
+              El nombre es obligatorio
+            </span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellidos</label>
+            <input class="form-control" formControlName="apellidos" placeholder="Tus apellidos" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-control" formControlName="email" type="email" placeholder="correo@ejemplo.com" />
+            <span class="field-error" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+              Email no válido
+            </span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input class="form-control" formControlName="telefono" placeholder="+34 600 000 000" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <div class="save-ok" *ngIf="guardado">
+            <span class="material-icons">check_circle</span> Perfil guardado
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <span class="material-icons">save</span> Guardar cambios
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
